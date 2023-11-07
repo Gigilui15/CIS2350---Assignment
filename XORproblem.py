@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pickle
 
 #Loading the Training Data (5XOR split into 80/20 after randomisation and removal of headers)
 training_data = pd.read_csv(
@@ -21,7 +22,7 @@ def sigmoid_derivative(x):
 
 #Other Hyperparameters
 learning_rate = 0.2
-epochs = 1000
+epochs = 10000
 input_layer_size = training_data.shape[1]-1
 hidden_layer_size = 4
 output_layer_size = 1
@@ -78,7 +79,19 @@ for epoch in range(epochs):
             # Save bad facts
             fact['Type'] = 'Bad Fact'
             bad_facts.append(fact)
+            
+            # Perform backpropagation only when there is a "bad fact"
+            delta_output = error[i] * sigmoid_derivative(output_layer_output[i])
+            error_hidden = delta_output.dot(output_weights.T)
+            delta_hidden = error_hidden * sigmoid_derivative(hidden_layer_input[i])
 
+            output_weights += hidden_layer_input[i].reshape(-1, 1).dot(delta_output.reshape(1, -1)) * learning_rate
+            hidden_weights += inputs[i].reshape(-1, 1).dot(delta_hidden.reshape(1, -1)) * learning_rate
+
+# Save the trained weights in a pickle file
+with open('model_weights.pkl', 'wb') as file:
+    pickle.dump((hidden_weights, output_weights), file)
+                        
 # Convert lists of dictionaries to Pandas DataFrames
 good_df = pd.DataFrame(good_facts)
 bad_df = pd.DataFrame(bad_facts)
