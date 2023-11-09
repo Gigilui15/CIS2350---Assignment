@@ -22,13 +22,13 @@ def sigmoid_derivative(x):
 
 #Other Hyperparameters
 learning_rate = 0.2
-epochs = 10000
+epochs = 5000
 input_layer_size = training_data.shape[1]-1
-hidden_layer_size = 4
+hidden_layer_size = 7
 output_layer_size = 1
 
 #Storing Each set of inputs in an array
-inputs=training_data.iloc[:, :-1].values
+inputs = training_data.iloc[:, :-1].values
 
 #Storing Each inputs' expected output in an array
 expected_outputs = training_data.iloc[:, -1].values
@@ -39,7 +39,7 @@ testing = testing_data.iloc[:, :-1].values
 testing_ans = testing_data.iloc[:, -1].values
 
 #Seeding numpy.random for reproducability
-np.random.seed(10)
+np.random.seed(73)
 #Generating random weights for the inputs
 hidden_weights = np.random.uniform(size=(input_layer_size,hidden_layer_size))
 #Generating random weights for the hidden->output layer
@@ -99,3 +99,16 @@ bad_df = pd.DataFrame(bad_facts)
 # Save DataFrames as CSV files
 good_df.to_csv('good_facts.csv', index=False)
 bad_df.to_csv('bad_facts.csv', index=False)
+
+# Function to make predictions using tra the trained neural network
+def predict(input_data, hidden_weights, output_weights):
+    hidden_layer_input = sigmoid(np.dot(input_data, hidden_weights))
+    output_layer_output = sigmoid(np.dot(hidden_layer_input, output_weights))
+    return output_layer_output
+
+# Perform predictions on the testing_data 
+testing_predictions = predict(testing, hidden_weights, output_weights)
+
+# Compare the predictions with the actual testing data
+for i in range(len(testing_predictions)):
+    print(f"Test {i + 1} - Predicted: {testing_predictions[i][0]}, Actual: {testing_ans[i]}")
