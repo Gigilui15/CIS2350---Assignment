@@ -22,9 +22,9 @@ def sigmoid_derivative(x):
 
 #Other Hyperparameters
 learning_rate = 0.2
-epochs = 5000
+epochs = 10000
 input_layer_size = training_data.shape[1]-1
-hidden_layer_size = 7
+hidden_layer_size = 4
 output_layer_size = 1
 
 #Storing Each set of inputs in an array
@@ -39,7 +39,7 @@ testing = testing_data.iloc[:, :-1].values
 testing_ans = testing_data.iloc[:, -1].values
 
 #Seeding numpy.random for reproducability
-np.random.seed(73)
+np.random.seed(200)
 #Generating random weights for the inputs
 hidden_weights = np.random.uniform(size=(input_layer_size,hidden_layer_size))
 #Generating random weights for the hidden->output layer
@@ -112,3 +112,17 @@ testing_predictions = predict(testing, hidden_weights, output_weights)
 # Compare the predictions with the actual testing data
 for i in range(len(testing_predictions)):
     print(f"Test {i + 1} - Predicted: {testing_predictions[i][0]}, Actual: {testing_ans[i]}")
+
+# Function to compute the accuracy based on the specified criteria
+def compute_accuracy(predictions, actual):
+    correct_predictions = 0
+
+    for i in range(len(predictions)):
+        if (predictions[i][0] < 0.5 and actual[i] == 0) or (predictions[i][0] >= 0.5 and actual[i] == 1):
+            correct_predictions += 1
+
+    accuracy = correct_predictions / len(predictions)
+    return accuracy
+# Compute and print the accuracy
+accuracy = compute_accuracy(testing_predictions, testing_ans)
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
