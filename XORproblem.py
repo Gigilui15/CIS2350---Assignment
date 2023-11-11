@@ -123,6 +123,7 @@ def compute_accuracy(predictions, actual):
 
     accuracy = correct_predictions / len(predictions)
     return accuracy
+
 # Compute and print the accuracy
 accuracy = compute_accuracy(testing_predictions, testing_ans)
 print(f"Model Accuracy: {accuracy * 100:.2f}%")

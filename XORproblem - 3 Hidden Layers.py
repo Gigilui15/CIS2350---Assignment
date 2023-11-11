@@ -139,7 +139,6 @@ for i in range(len(testing_predictions)):
     print(f"Test {i + 1} - Predicted: {testing_predictions[i][0]}, Actual: {testing_ans[i]}")
 
 # Function to compute the accuracy based on the specified criteria
-# Function to compute the accuracy based on the specified criteria
 def compute_accuracy(predictions, actual):
     correct_predictions = 0
 

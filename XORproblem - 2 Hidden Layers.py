@@ -20,7 +20,7 @@ def sigmoid_derivative(x):
 learning_rate = 0.2
 epochs = 5000
 input_layer_size = training_data.shape[1] - 1
-hidden_layer1_size = 4
+hidden_layer1_size = 3
 hidden_layer2_size = 4  # New hidden layer
 output_layer_size = 1
 
