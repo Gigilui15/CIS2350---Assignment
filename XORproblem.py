@@ -20,6 +20,32 @@ def sigmoid(x):
 def sigmoid_derivative(x):
     return x * (1 - x)
 
+def forward_propagation(sample, input_weights, hidden_weights):
+    hidden_layer_input = np.dot(sample, input_weights)
+    hidden_layer_output = sigmoid(hidden_layer_input)
+
+    output_layer_input = np.dot(hidden_layer_output, hidden_weights)
+    output_layer_output = sigmoid(output_layer_input)
+    
+    return hidden_layer_output, output_layer_output
+
+def backpropagation(inputs, input_weights, hidden_weights, output_layer_output, outputs, hidden_layer_output):
+    output_error = outputs - output_layer_output
+    output_delta = output_error * sigmoid_derivative(output_layer_output)
+
+    hidden_error = output_delta.dot(hidden_weights.T)
+    hidden_delta = hidden_error * sigmoid_derivative(hidden_layer_output)
+
+    hidden_weights += hidden_layer_output.T.dot(output_delta) * learning_rate
+    input_weights += inputs.T.dot(hidden_delta) * learning_rate
+
+    return hidden_weights, input_weights
+
+# Function to calculate training accuracy
+def training_accuracy(epoch, correct_predictions, total_examples):
+    accuracy = (correct_predictions / total_examples) * 100
+    print(f"\rTraining | Epoch: {epoch + 1} | Correct Predictions: {correct_predictions} | Accuracy: {accuracy:.2f}%", end="", flush=True)
+    
 #Other Hyperparameters
 learning_rate = 0.2
 epochs = 10000
@@ -29,7 +55,6 @@ output_layer_size = 1
 
 #Storing Each set of inputs in an array
 inputs = training_data.iloc[:, :-1].values
-
 #Storing Each inputs' expected output in an array
 expected_outputs = training_data.iloc[:, -1].values
 
@@ -39,91 +64,98 @@ testing = testing_data.iloc[:, :-1].values
 testing_ans = testing_data.iloc[:, -1].values
 
 #Seeding numpy.random for reproducability
-np.random.seed(200)
+np.random.seed(10)
 #Generating random weights for the inputs
-hidden_weights = np.random.uniform(size=(input_layer_size,hidden_layer_size))
+input_weights = np.random.uniform(size=(input_layer_size,hidden_layer_size))
+
 #Generating random weights for the hidden->output layer
-output_weights = np.random.uniform(size=(hidden_layer_size, output_layer_size))
+hidden_weights = np.random.uniform(size=(hidden_layer_size, output_layer_size))
 
 error_threshold = 0.2
-good_facts = []
-bad_facts = []
+facts = []
 
-#Training Algorithm 
+# Training Algorithm
+converged = False
+convergence_epoch = None
 for epoch in range(epochs):
-    #Feed Forward Propagation
-    #Input Layer
-    input_feedforward = np.dot(inputs,hidden_weights)
-    hidden_layer_input = sigmoid(input_feedforward)
-    #Hidden Layer
-    hidden_feedforward = np.dot(hidden_layer_input,output_weights)
-    output_layer_output = sigmoid(hidden_feedforward)
-    
-    #Checking for the error
-    error = expected_outputs.reshape(-1,1) - output_layer_output
-    
-    for i in range(len(error)):
-        fact = {
-            'Epoch': epoch + 1,
-            'Index': i,
-            'Expected Output': expected_outputs[i],
-            'Output': output_layer_output[i][0],
-            'Error': error[i][0]
-        }
-        
-        if abs(error[i]) <= error_threshold:
-            # Save good facts
-            fact['Type'] = 'Good Fact'
-            good_facts.append(fact)
-        else:
-            # Save bad facts
-            fact['Type'] = 'Bad Fact'
-            bad_facts.append(fact)
-            
-            # Perform backpropagation only when there is a "bad fact"
-            delta_output = error[i] * sigmoid_derivative(output_layer_output[i])
-            error_hidden = delta_output.dot(output_weights.T)
-            delta_hidden = error_hidden * sigmoid_derivative(hidden_layer_input[i])
-
-            output_weights += hidden_layer_input[i].reshape(-1, 1).dot(delta_output.reshape(1, -1)) * learning_rate
-            hidden_weights += inputs[i].reshape(-1, 1).dot(delta_hidden.reshape(1, -1)) * learning_rate
-
-# Save the trained weights in a pickle file
-with open('model_weights.pkl', 'wb') as file:
-    pickle.dump((hidden_weights, output_weights), file)
-                        
-# Convert lists of dictionaries to Pandas DataFrames
-good_df = pd.DataFrame(good_facts)
-bad_df = pd.DataFrame(bad_facts)
-
-# Save DataFrames as CSV files
-good_df.to_csv('good_facts.csv', index=False)
-bad_df.to_csv('bad_facts.csv', index=False)
-
-# Function to make predictions using tra the trained neural network
-def predict(input_data, hidden_weights, output_weights):
-    hidden_layer_input = sigmoid(np.dot(input_data, hidden_weights))
-    output_layer_output = sigmoid(np.dot(hidden_layer_input, output_weights))
-    return output_layer_output
-
-# Perform predictions on the testing_data 
-testing_predictions = predict(testing, hidden_weights, output_weights)
-
-# Compare the predictions with the actual testing data
-for i in range(len(testing_predictions)):
-    print(f"Test {i + 1} - Predicted: {testing_predictions[i][0]}, Actual: {testing_ans[i]}")
-
-# Function to compute the accuracy based on the specified criteria
-def compute_accuracy(predictions, actual):
+    bad_facts_count = 0
     correct_predictions = 0
 
-    for i in range(len(predictions)):
-        if (predictions[i][0] < 0.5 and actual[i] == 0) or (predictions[i][0] >= 0.5 and actual[i] == 1):
+    for input_index in range(len(inputs)):
+        sample = inputs[input_index].reshape(1, -1)
+        hidden_layer_output, output_layer_output = forward_propagation(sample, input_weights, hidden_weights)
+        error = expected_outputs[input_index] - output_layer_output
+
+        if abs(error) > error_threshold:
+            backpropagation(sample, input_weights, hidden_weights, output_layer_output, expected_outputs[input_index], hidden_layer_output)
+            bad_facts_count += 1
+            status = "Bad Fact"
+        else:
+            status = "Good Fact"
             correct_predictions += 1
 
-    accuracy = correct_predictions / len(predictions)
-    return accuracy
+        fact = {
+            'Epoch': epoch + 1,
+            'Index': input_index + 1,
+            'Answer': expected_outputs[input_index],
+            'Output': output_layer_output[0],
+            'Error': error[0],
+            'Fact': status
+        }
+        facts.append(fact)
 
-# Compute and print the accuracy
-accuracy = compute_accuracy(testing_predictions, testing_ans)
-print(f"Model Accuracy: {accuracy * 100:.2f}%")
+   # Call the training accuracy function
+    training_accuracy(epoch, correct_predictions, len(inputs))
+
+    # Check for convergence by examining bad facts in the last epoch
+    if bad_facts_count == 0:
+        converged = True
+        convergence_epoch = epoch + 1
+        break  # Break out of the training loop
+
+# Print convergence information
+if converged:
+    print(f"\nConvergence reached at epoch {convergence_epoch} based on training accuracy.")
+else:
+    print("\nTraining completed without convergence.")
+
+# Testing Algorithm
+correct_predictions = 0
+print("\nTraining:\n")
+for input_index in range(len(testing)):
+    test_sample = testing[input_index].reshape(1, -1)
+    test_hidden_layer_output, test_output_layer_output = forward_propagation(test_sample, input_weights, hidden_weights)
+    test_error = testing_ans[input_index] - test_output_layer_output
+    if abs(test_error) > error_threshold:
+        test_status = "Incorrect"
+    else:
+        test_status = "Correct"
+        correct_predictions += 1
+        
+    test_fact = {
+        'Index': input_index + 1,
+        'Answer': testing_ans[input_index],
+        'Output': test_output_layer_output[0][0],  
+        'Fact': test_status
+    }
+
+    # Print the test fact to the console without curly braces and single quotes
+    print(f"Test Fact {test_fact['Index']} | Answer = {test_fact['Answer']} | Output = {test_fact['Output']:.6f} | Fact = {test_fact['Fact']}")
+
+# Calculate and print the percentage accuracy
+accuracy = (correct_predictions / len(testing)) * 100
+print(f"\nAccuracy: {accuracy:.2f}%")
+
+print("\n Saving Facts and Weights...")
+# Convert the list of facts to a DataFrame
+facts_df = pd.DataFrame(facts)
+
+# Save the DataFrame to a CSV file
+facts_df.to_csv('training_facts.csv', index=False)
+
+# Saving the Weights
+with open('input_weights.pkl', 'wb') as f:
+    pickle.dump(input_weights, f)
+
+with open('hidden_weights.pkl', 'wb') as f:
+    pickle.dump(hidden_weights, f)

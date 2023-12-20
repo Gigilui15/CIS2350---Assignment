@@ -29,20 +29,19 @@ def forward_propagation(sample, input_hidden1_weights, hidden1_hidden2_weights, 
     return hidden_layer1_output, hidden_layer2_output, output_layer_output
 
 def backpropagation(inputs, input_hidden1_weights, hidden1_hidden2_weights, hidden2_output_weights,
-                    outputs, hidden_layer1_output, hidden_layer2_output):
-    output_error = outputs - hidden_layer2_output
-    output_delta = output_error * sigmoid_derivative(hidden_layer2_output)
+                    output_layer_output, outputs, hidden_layer1_output, hidden_layer2_output):
+    output_error = outputs - output_layer_output
+    output_delta = output_error * sigmoid_derivative(output_layer_output)
 
-    hidden2_error = output_delta.T.dot(hidden2_output_weights.T)  # Transpose output_delta
+    hidden2_error = output_delta.dot(hidden2_output_weights.T)
     hidden2_delta = hidden2_error * sigmoid_derivative(hidden_layer2_output)
 
     hidden1_error = hidden2_delta.dot(hidden1_hidden2_weights.T)
     hidden1_delta = hidden1_error * sigmoid_derivative(hidden_layer1_output)
 
-    # Update weights
-    hidden2_output_weights += hidden_layer2_output.T.dot(output_delta.reshape(-1, 1)) * learning_rate
-    hidden1_hidden2_weights += hidden_layer1_output.T.dot(hidden2_delta.reshape(-1, 1)) * learning_rate
-    input_hidden1_weights += inputs.T.dot(hidden1_delta.reshape(-1, 1)) * learning_rate
+    hidden2_output_weights += hidden_layer2_output.T.dot(output_delta) * learning_rate
+    hidden1_hidden2_weights += hidden_layer1_output.T.dot(hidden2_delta) * learning_rate
+    input_hidden1_weights += inputs.T.dot(hidden1_delta) * learning_rate
 
     return hidden2_output_weights, hidden1_hidden2_weights, input_hidden1_weights
 
@@ -98,10 +97,9 @@ for epoch in range(epochs):
 
         if abs(error) > error_threshold:
             hidden2_output_weights, hidden1_hidden2_weights, input_hidden1_weights = backpropagation(
-    sample, input_hidden1_weights, hidden1_hidden2_weights, hidden2_output_weights,
-    expected_outputs[input_index], hidden_layer1_output, hidden_layer2_output
-)
-            
+                sample, input_hidden1_weights, hidden1_hidden2_weights, hidden2_output_weights,
+                expected_outputs[input_index], hidden_layer1_output, hidden_layer2_output
+            )
             bad_facts_count += 1
             status = "Bad Fact"
         else:
