@@ -64,7 +64,7 @@ testing = testing_data.iloc[:, :-1].values
 testing_ans = testing_data.iloc[:, -1].values
 
 #Seeding numpy.random for reproducability
-np.random.seed(10)
+np.random.seed(666)
 #Generating random weights for the inputs
 input_weights = np.random.uniform(size=(input_layer_size,hidden_layer_size))
 
@@ -140,7 +140,7 @@ for input_index in range(len(testing)):
     }
 
     # Print the test fact to the console without curly braces and single quotes
-    print(f"Test Fact {test_fact['Index']} | Answer = {test_fact['Answer']} | Output = {test_fact['Output']:.6f} | Fact = {test_fact['Fact']}")
+    print(f"Test Fact {test_fact['Index']} | Answer = {test_fact['Answer']} | Output = {test_fact['Output']:.6f} | {test_fact['Fact']}")
 
 # Calculate and print the percentage accuracy
 accuracy = (correct_predictions / len(testing)) * 100
@@ -159,3 +159,5 @@ with open('input_weights.pkl', 'wb') as f:
 
 with open('hidden_weights.pkl', 'wb') as f:
     pickle.dump(hidden_weights, f)
+    
+print("\n Finished!")
