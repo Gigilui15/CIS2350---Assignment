@@ -6,42 +6,48 @@ import pickle
 training_data = pd.read_csv('C:/Users/luigi/Desktop/Third Year/Business Applications of AI/Assignment/5XOR-Training.csv')
 testing_data = pd.read_csv('C:/Users/luigi/Desktop/Third Year/Business Applications of AI/Assignment/5XOR-Testing.csv')
 
-# Sigmoid function for the hidden and output layer neurons
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+# ReLU function for the hidden and output layer neurons
+def relu(x):
+    return np.maximum(0, x)
 
-# Sigmoid derivative to find the gradient of the curve - to use in Error Backpropagation
-# Backpropagation formula: error * sigmoid_derivative
-def sigmoid_derivative(x):
-    return x * (1 - x)
+# ReLU derivative to find the gradient of the curve - to use in Error Backpropagation
+def relu_derivative(x):
+    return np.where(x > 0, 1, 0)
 
-def forward_propagation(sample, input_weights, hidden_weights, hidden_weights2):
+def forward_propagation(sample, input_weights, hidden_weights, hidden_weights2, hidden_weights3):
     hidden_layer_input = np.dot(sample, input_weights)
-    hidden_layer_output = sigmoid(hidden_layer_input)
+    hidden_layer_output = relu(hidden_layer_input)
 
     hidden_layer_input2 = np.dot(hidden_layer_output, hidden_weights)
-    hidden_layer_output2 = sigmoid(hidden_layer_input2)
+    hidden_layer_output2 = relu(hidden_layer_input2)
 
-    output_layer_input = np.dot(hidden_layer_output2, hidden_weights2)
-    output_layer_output = sigmoid(output_layer_input)
+    hidden_layer_input3 = np.dot(hidden_layer_output2, hidden_weights2)
+    hidden_layer_output3 = relu(hidden_layer_input3)
+
+    output_layer_input = np.dot(hidden_layer_output3, hidden_weights3)
+    output_layer_output = relu(output_layer_input)
     
-    return hidden_layer_output, hidden_layer_output2, output_layer_output
+    return hidden_layer_output, hidden_layer_output2, hidden_layer_output3, output_layer_output
 
-def backpropagation(inputs, input_weights, hidden_weights, hidden_weights2, output_layer_output, outputs, hidden_layer_output, hidden_layer_output2):
+def backpropagation(inputs, input_weights, hidden_weights, hidden_weights2, hidden_weights3, output_layer_output, outputs, hidden_layer_output, hidden_layer_output2, hidden_layer_output3):
     output_error = outputs - output_layer_output
-    output_delta = output_error * sigmoid_derivative(output_layer_output)
+    output_delta = output_error * relu_derivative(output_layer_output)
 
-    hidden_error2 = output_delta.dot(hidden_weights2.T)
-    hidden_delta2 = hidden_error2 * sigmoid_derivative(hidden_layer_output2)
+    hidden_error3 = output_delta.dot(hidden_weights3.T)
+    hidden_delta3 = hidden_error3 * relu_derivative(hidden_layer_output3)
+
+    hidden_error2 = hidden_delta3.dot(hidden_weights2.T)
+    hidden_delta2 = hidden_error2 * relu_derivative(hidden_layer_output2)
 
     hidden_error = hidden_delta2.dot(hidden_weights.T)
-    hidden_delta = hidden_error * sigmoid_derivative(hidden_layer_output)
+    hidden_delta = hidden_error * relu_derivative(hidden_layer_output)
 
-    hidden_weights2 += hidden_layer_output2.T.dot(output_delta) * learning_rate
+    hidden_weights3 += hidden_layer_output3.T.dot(output_delta) * learning_rate
+    hidden_weights2 += hidden_layer_output2.T.dot(hidden_delta3) * learning_rate
     hidden_weights += hidden_layer_output.T.dot(hidden_delta2) * learning_rate
     input_weights += inputs.T.dot(hidden_delta) * learning_rate
 
-    return hidden_weights, hidden_weights2, input_weights
+    return hidden_weights, hidden_weights2, hidden_weights3, input_weights
 
 # Function to calculate training accuracy
 def training_accuracy(epoch, correct_predictions, total_examples):
@@ -49,11 +55,12 @@ def training_accuracy(epoch, correct_predictions, total_examples):
     print(f"\rTraining | Epoch: {epoch + 1} | Correct Predictions: {correct_predictions} | Accuracy: {accuracy:.2f}%", end="", flush=True)
 
 # Hyperparameters
-learning_rate = 0.2
-epochs = 10000
+learning_rate = 0.1
+epochs = 50000
 input_layer_size = training_data.shape[1] - 1
 hidden_layer_size = 4
-hidden_layer_size2 = 5
+hidden_layer_size2 = 4
+hidden_layer_size3 = 4
 output_layer_size = 1
 error_threshold = 0.2
 
@@ -68,12 +75,13 @@ testing = testing_data.iloc[:, :-1].values
 testing_ans = testing_data.iloc[:, -1].values
 
 # Seeding numpy.random for reproducibility
-np.random.seed(666)
+np.random.seed(320)
 # Generating random weights for the inputs
 input_weights = np.random.uniform(size=(input_layer_size, hidden_layer_size))
 # Generating random weights for the hidden->output layer
 hidden_weights = np.random.uniform(size=(hidden_layer_size, hidden_layer_size2))
-hidden_weights2 = np.random.uniform(size=(hidden_layer_size2, output_layer_size))
+hidden_weights2 = np.random.uniform(size=(hidden_layer_size2, hidden_layer_size3))
+hidden_weights3 = np.random.uniform(size=(hidden_layer_size3, output_layer_size))
 
 facts = []
 
@@ -86,11 +94,11 @@ for epoch in range(epochs):
 
     for input_index in range(len(inputs)):
         sample = inputs[input_index].reshape(1, -1)
-        hidden_layer_output, hidden_layer_output2, output_layer_output = forward_propagation(sample, input_weights, hidden_weights, hidden_weights2)
+        hidden_layer_output, hidden_layer_output2, hidden_layer_output3, output_layer_output = forward_propagation(sample, input_weights, hidden_weights, hidden_weights2, hidden_weights3)
         error = expected_outputs[input_index] - output_layer_output
 
         if abs(error) > error_threshold:
-            backpropagation(sample, input_weights, hidden_weights, hidden_weights2, output_layer_output, expected_outputs[input_index], hidden_layer_output, hidden_layer_output2)
+            backpropagation(sample, input_weights, hidden_weights, hidden_weights2, hidden_weights3, output_layer_output, expected_outputs[input_index], hidden_layer_output, hidden_layer_output2, hidden_layer_output3)
             bad_facts_count += 1
             status = "Bad Fact"
         else:
@@ -127,7 +135,7 @@ correct_predictions = 0
 print("\nTraining:\n")
 for input_index in range(len(testing)):
     test_sample = testing[input_index].reshape(1, -1)
-    test_hidden_layer_output, test_hidden_layer_output2, test_output_layer_output = forward_propagation(test_sample, input_weights, hidden_weights, hidden_weights2)
+    test_hidden_layer_output, test_hidden_layer_output2, test_hidden_layer_output3, test_output_layer_output = forward_propagation(test_sample, input_weights, hidden_weights, hidden_weights2, hidden_weights3)
     test_error = testing_ans[input_index] - test_output_layer_output
     if abs(test_error) > error_threshold:
         test_status = "Incorrect"
@@ -165,5 +173,8 @@ with open('hidden_weights.pkl', 'wb') as f:
 
 with open('hidden_weights2.pkl', 'wb') as f:
     pickle.dump(hidden_weights2, f)
+
+with open('hidden_weights3.pkl', 'wb') as f:
+    pickle.dump(hidden_weights3, f)
 
 print("\n Finished!")
