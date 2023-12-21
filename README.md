@@ -15,9 +15,3 @@ Express results as simple classification error.
 Discuss, and interpret, the results.
 Extras - what other experiments, or visualizations, can you do?
 You do not need a GPU to train the network.
-
-'EpochsVsBadFacts.py' is a script run after the model is trained to obtain a csv file with the total number of bad facts for each epoch. This is run to eventually plot the Bad Facts Vs Epochs Graph
-
-The other scripts 'XORProblem - 2 Hidden Layers.py' and 'XORProblem - 3 Hidden Layers.py' are the same MLP but with additional hidden layers which were experimented with for this project.
-
-Note that 100% accuracy was achieved for the XOR Problem in 'XORProblem - 3 Hidden Layers.py' using the optimal parameters
